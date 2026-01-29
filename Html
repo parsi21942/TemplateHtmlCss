@@ -1,3 +1,1015 @@
+<!-- src/main/resources/templates/index.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Мониторинг запусков приложений</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .main-container {
+            padding: 20px;
+        }
+        .header-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stats-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .table-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+        .table-custom {
+            margin-bottom: 0;
+            width: 100%;
+            table-layout: fixed;
+        }
+        .table-custom thead th {
+            background-color: #34495e;
+            color: white;
+            border: none;
+            padding: 12px 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            position: relative;
+            overflow: hidden;
+        }
+        .table-custom thead th .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background-color: rgba(255, 255, 255, 0.2);
+            cursor: col-resize;
+            transition: background-color 0.2s;
+        }
+        .table-custom thead th .resize-handle:hover,
+        .table-custom thead th .resize-handle.resizing {
+            background-color: rgba(255, 255, 255, 0.8);
+            width: 8px;
+        }
+        .table-custom tbody tr {
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .table-custom tbody td {
+            padding: 10px 8px;
+            vertical-align: middle;
+            border: none;
+            overflow: hidden;
+        }
+        .app-name-cell {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .config-cell {
+            font-size: 0.85rem;
+        }
+        .git-info-cell {
+            font-size: 0.85rem;
+        }
+        .badge-cell {
+            width: 100px;
+        }
+        .action-cell {
+            width: 130px;
+        }
+        .date-cell {
+            width: 170px;
+        }
+        .truncate-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            max-width: 100%;
+            display: block;
+        }
+        .truncate-text:hover {
+            white-space: normal;
+            overflow: visible;
+            position: absolute;
+            background: white;
+            z-index: 100;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            max-width: 400px;
+        }
+        .badge-service {
+            background-color: #3498db;
+        }
+        .badge-report {
+            background-color: #2ecc71;
+        }
+        .badge-web {
+            background-color: #f39c12;
+        }
+        .badge-other {
+            background-color: #95a5a6;
+        }
+        .quick-link {
+            transition: all 0.3s ease;
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        .quick-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .json-modal .modal-dialog {
+            max-width: 800px;
+        }
+        .json-content {
+            max-height: 500px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .scroll-container {
+            overflow-x: auto;
+            max-height: 70vh;
+            position: relative;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        .server-badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        .link-test {
+            color: #28a745;
+        }
+        .link-prod {
+            color: #dc3545;
+        }
+        .no-data {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .git-badge {
+            display: inline-block;
+            margin: 2px;
+            font-size: 0.75rem;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .git-branch {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .git-commit {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .git-tag {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .git-remote {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .git-author {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        .column-controls {
+            background-color: #f8f9fa;
+            padding: 10px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .reset-columns-btn {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+        }
+        .tooltip-text {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        .resize-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Заголовок и статистика -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card header-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h1 class="card-title mb-1">
+                                    <i class="bi bi-graph-up"></i> Мониторинг запусков приложений
+                                </h1>
+                                <p class="card-text opacity-75 mb-0">Реальная информация о запусках и конфигурации</p>
+                            </div>
+                            <div class="text-end">
+                                <div class="btn-group" role="group">
+                                    <a href="/history?period=hour" class="btn btn-light quick-link me-2">
+                                        <i class="bi bi-clock"></i> За час
+                                    </a>
+                                    <a href="/history?period=day" class="btn btn-light quick-link me-2">
+                                        <i class="bi bi-calendar-day"></i> За сутки
+                                    </a>
+                                    <a href="/history" class="btn btn-light quick-link">
+                                        <i class="bi bi-list-ul"></i> Вся история
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основная таблица -->
+        <div class="row">
+            <div class="col-12">
+                <div class="table-container">
+                    <div class="table-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table"></i> Приложения (последний запуск)
+                            <span class="badge bg-light text-dark ms-2" th:text="${applications.size()}"></span>
+                        </h5>
+                        <div class="text-light small">
+                            <i class="bi bi-arrows-angle-expand"></i> Тяните за правый край заголовков для изменения ширины колонок
+                        </div>
+                    </div>
+                    
+                    <!-- Управление колонками -->
+                    <div class="column-controls">
+                        <div class="resize-info">
+                            <i class="bi bi-arrow-left-right"></i> Перетаскивайте разделители колонок для изменения ширины
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm reset-columns-btn" onclick="resetColumnWidths()">
+                            <i class="bi bi-arrow-clockwise"></i> Сбросить ширину колонок
+                        </button>
+                    </div>
+                    
+                    <div class="scroll-container">
+                        <table class="table table-custom" id="mainTable">
+                            <thead>
+                                <tr>
+                                    <th class="app-name-cell" style="width: 200px;" data-min-width="150" data-default-width="200">
+                                        Приложение
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="badge-cell" style="width: 100px;" data-min-width="80" data-default-width="100">
+                                        Тип
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="badge-cell" style="width: 120px;" data-min-width="100" data-default-width="120">
+                                        Сервер
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="date-cell" style="width: 170px;" data-min-width="150" data-default-width="170">
+                                        Последний запуск
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="config-cell" style="width: 180px;" data-min-width="120" data-default-width="180">
+                                        Конфигурация
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="description-cell" style="width: 200px;" data-min-width="150" data-default-width="200">
+                                        Описание
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="log-cell" style="width: 140px;" data-min-width="100" data-default-width="140">
+                                        Логи Тест
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="log-cell" style="width: 140px;" data-min-width="100" data-default-width="140">
+                                        Логи Прод
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="balancer-cell" style="width: 160px;" data-min-width="120" data-default-width="160">
+                                        Балансировка Тест
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="balancer-cell" style="width: 160px;" data-min-width="120" data-default-width="160">
+                                        Балансировка Прод
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="git-info-cell" style="width: 220px;" data-min-width="180" data-default-width="220">
+                                        Git информация
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="jvm-cell" style="width: 220px;" data-min-width="180" data-default-width="220">
+                                        JVM параметры
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                    <th class="action-cell" style="width: 130px;" data-min-width="100" data-default-width="130">
+                                        Действия
+                                        <div class="resize-handle"></div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="app : ${applications}">
+                                    <!-- Имя приложения -->
+                                    <td class="app-name-cell">
+                                        <strong th:text="${app.appName}"></strong>
+                                        <div class="mt-1">
+                                            <small class="text-muted truncate-text" 
+                                                   th:title="${app.appConfig}"
+                                                   th:text="${app.appConfig ?: '—'}">
+                                            </small>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Тип приложения -->
+                                    <td class="badge-cell">
+                                        <span th:classappend="'badge ' + 
+                                            ${app.appType == 'service'} ? 'badge-service' :
+                                            ${app.appType == 'report'} ? 'badge-report' :
+                                            ${app.appType == 'web'} ? 'badge-web' : 'badge-other'"
+                                            class="badge"
+                                            th:text="${app.appType}">
+                                        </span>
+                                    </td>
+                                    
+                                    <!-- Сервер -->
+                                    <td>
+                                        <span th:if="${app.serverName}" 
+                                              class="server-badge truncate-text"
+                                              th:title="${app.serverName}"
+                                              th:text="${app.serverName}"></span>
+                                        <span th:unless="${app.serverName}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Дата последнего запуска -->
+                                    <td class="date-cell">
+                                        <span th:if="${app.lastStartDate}" 
+                                              class="text-nowrap"
+                                              th:text="${#temporals.format(app.lastStartDate, 'dd.MM.yyyy HH:mm:ss')}">
+                                        </span>
+                                        <span th:unless="${app.lastStartDate}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Конфигурация -->
+                                    <td class="config-cell">
+                                        <span class="truncate-text" 
+                                              th:title="${app.appConfig}"
+                                              th:text="${app.appConfig ?: '—'}">
+                                        </span>
+                                    </td>
+                                    
+                                    <!-- Описание -->
+                                    <td class="description-cell">
+                                        <span th:if="${app.description}" 
+                                              class="truncate-text"
+                                              th:title="${app.description}"
+                                              th:text="${app.description}"></span>
+                                        <span th:unless="${app.description}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Логи Тест -->
+                                    <td class="log-cell">
+                                        <a th:if="${app.testLogUrl}" 
+                                           th:href="${app.testLogUrl}" 
+                                           class="link-test truncate-text" 
+                                           th:title="${app.testLogUrl}"
+                                           target="_blank">
+                                            <i class="bi bi-journal-text"></i> Перейти
+                                        </a>
+                                        <span th:unless="${app.testLogUrl}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Логи Прод -->
+                                    <td class="log-cell">
+                                        <a th:if="${app.prodLogUrl}" 
+                                           th:href="${app.prodLogUrl}" 
+                                           class="link-prod truncate-text" 
+                                           th:title="${app.prodLogUrl}"
+                                           target="_blank">
+                                            <i class="bi bi-journal-text"></i> Перейти
+                                        </a>
+                                        <span th:unless="${app.prodLogUrl}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Балансировка Тест -->
+                                    <td class="balancer-cell">
+                                        <a th:if="${app.testBalancerUrl}" 
+                                           th:href="${app.testBalancerUrl}" 
+                                           class="link-test truncate-text" 
+                                           th:title="${app.testBalancerUrl}"
+                                           target="_blank">
+                                            <i class="bi bi-shuffle"></i> Перейти
+                                        </a>
+                                        <span th:unless="${app.testBalancerUrl}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Балансировка Прод -->
+                                    <td class="balancer-cell">
+                                        <a th:if="${app.prodBalancerUrl}" 
+                                           th:href="${app.prodBalancerUrl}" 
+                                           class="link-prod truncate-text" 
+                                           th:title="${app.prodBalancerUrl}"
+                                           target="_blank">
+                                            <i class="bi bi-shuffle"></i> Перейти
+                                        </a>
+                                        <span th:unless="${app.prodBalancerUrl}" class="no-data">—</span>
+                                    </td>
+                                    
+                                    <!-- Git информация (разбитая на поля) -->
+                                    <td class="git-info-cell">
+                                        <!-- Отображение разбитых git полей -->
+                                        <div th:if="${app.gitBranch or app.gitCommit or app.gitTag or app.gitRemote or app.gitAuthor}">
+                                            <div th:if="${app.gitBranch}">
+                                                <span class="badge git-badge git-branch" 
+                                                      th:title="'Branch: ' + ${app.gitBranch}"
+                                                      th:text="${app.gitBranch}">
+                                                </span>
+                                            </div>
+                                            <div th:if="${app.gitCommit}" class="mt-1">
+                                                <span class="badge git-badge git-commit" 
+                                                      th:title="'Commit: ' + ${app.gitCommit}"
+                                                      th:text="${#strings.substring(app.gitCommit, 0, 8)}">
+                                                </span>
+                                            </div>
+                                            <div th:if="${app.gitTag}" class="mt-1">
+                                                <span class="badge git-badge git-tag" 
+                                                      th:title="'Tag: ' + ${app.gitTag}"
+                                                      th:text="${app.gitTag}">
+                                                </span>
+                                            </div>
+                                            <div th:if="${app.gitRemote}" class="mt-1">
+                                                <span class="badge git-badge git-remote truncate-text" 
+                                                      th:title="'Remote: ' + ${app.gitRemote}"
+                                                      th:text="${app.gitRemote}">
+                                                </span>
+                                            </div>
+                                            <div th:if="${app.gitAuthor}" class="mt-1">
+                                                <span class="badge git-badge git-author truncate-text" 
+                                                      th:title="'Author: ' + ${app.gitAuthor}"
+                                                      th:text="${app.gitAuthor}">
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Кнопка для просмотра полного JSON -->
+                                        <div th:if="${app.gitJson}" class="mt-2">
+                                            <button class="btn btn-sm btn-outline-secondary w-100" 
+                                                    onclick="showJsonModal(this)" 
+                                                    th:data-json="${app.gitJson}"
+                                                    th:data-appname="${app.appName}"
+                                                    th:data-type="git">
+                                                <i class="bi bi-code-slash"></i> Полный JSON
+                                            </button>
+                                            <small class="text-muted d-block truncate-text mt-1" 
+                                                   th:title="${app.gitJson}"
+                                                   th:text="${#strings.substring(app.gitJson, 0, 40) + '...'}">
+                                            </small>
+                                        </div>
+                                        <div th:unless="${app.gitBranch or app.gitCommit or app.gitTag or app.gitRemote or app.gitAuthor or app.gitJson}">
+                                            <span class="no-data">—</span>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- JVM параметры -->
+                                    <td class="jvm-cell">
+                                        <div th:if="${app.jvm}">
+                                            <button class="btn btn-sm btn-outline-info w-100" 
+                                                    onclick="showTextModal(this)"
+                                                    th:data-text="${app.jvm}"
+                                                    th:data-appname="${app.appName}"
+                                                    th:data-type="JVM">
+                                                <i class="bi bi-gear"></i> Показать
+                                            </button>
+                                            <small class="text-muted d-block truncate-text mt-1" 
+                                                   th:title="${app.jvm}"
+                                                   th:text="${#strings.substring(app.jvm, 0, 50) + '...'}">
+                                            </small>
+                                        </div>
+                                        <div th:unless="${app.jvm}">
+                                            <span class="no-data">—</span>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Действия -->
+                                    <td class="action-cell">
+                                        <div class="btn-group-vertical btn-group-sm w-100">
+                                            <a th:href="@{/history/app/{name}(name=${app.appName})}" 
+                                               class="btn btn-outline-primary mb-1"
+                                               title="История запусков">
+                                                <i class="bi bi-clock-history"></i> История
+                                            </a>
+                                            <a th:href="@{/history?appName={name}(name=${app.appName})}" 
+                                               class="btn btn-outline-info"
+                                               title="Поиск по приложению">
+                                                <i class="bi bi-search"></i> Поиск
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Если нет данных -->
+                                <tr th:if="${#lists.isEmpty(applications)}">
+                                    <td colspan="13" class="text-center py-5">
+                                        <div class="py-5">
+                                            <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+                                            <h4 class="text-muted mb-2">Нет данных для отображения</h4>
+                                            <p class="text-muted mb-0">Проверьте подключение к базе данных</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Информация о таблице -->
+                    <div class="card-footer text-muted d-flex justify-content-between align-items-center">
+                        <small>
+                            <i class="bi bi-info-circle"></i>
+                            Показано приложений: <strong th:text="${applications.size()}"></strong>
+                        </small>
+                        <small>
+                            Последнее обновление: <span id="lastUpdateTime"></span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для отображения JSON -->
+    <div class="modal fade json-modal" id="jsonModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="jsonModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="json-content" id="jsonContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Закрыть
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="copyToClipboard()">
+                        <i class="bi bi-clipboard"></i> Копировать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для отображения текста (JVM) -->
+    <div class="modal fade" id="textModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="textModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="json-content" id="textContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Закрыть
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="copyTextToClipboard()">
+                        <i class="bi bi-clipboard"></i> Копировать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключаем библиотеки -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Константы для localStorage
+        const COLUMN_WIDTHS_KEY = 'app_monitor_column_widths';
+        let isResizing = false;
+        let currentResizeColumn = null;
+        let startX = 0;
+        let startWidth = 0;
+        
+        // Форматирование JSON с подсветкой
+        function syntaxHighlight(json) {
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(
+                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                function (match) {
+                    var cls = 'number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'key';
+                        } else {
+                            cls = 'string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                }
+            );
+        }
+        
+        // Инициализация изменения ширины колонок
+        function initColumnResize() {
+            const table = document.getElementById('mainTable');
+            const headers = table.querySelectorAll('thead th');
+            const resizeHandles = table.querySelectorAll('.resize-handle');
+            
+            // Загружаем сохраненные ширины колонок
+            loadColumnWidths();
+            
+            // Добавляем обработчики событий для каждого разделителя
+            resizeHandles.forEach((handle, index) => {
+                handle.addEventListener('mousedown', function(e) {
+                    startResize(e, headers[index]);
+                });
+                
+                handle.addEventListener('touchstart', function(e) {
+                    startResize(e.touches[0], headers[index]);
+                });
+            });
+            
+            // Обработчики для документа
+            document.addEventListener('mousemove', handleResize);
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 1) {
+                    handleResize(e.touches[0]);
+                }
+            }, { passive: false });
+            
+            document.addEventListener('mouseup', stopResize);
+            document.addEventListener('touchend', stopResize);
+        }
+        
+        // Начало изменения ширины
+        function startResize(e, column) {
+            isResizing = true;
+            currentResizeColumn = column;
+            startX = e.clientX;
+            startWidth = column.offsetWidth;
+            
+            // Добавляем класс для визуальной обратной связи
+            column.querySelector('.resize-handle').classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            
+            e.preventDefault();
+        }
+        
+        // Обработка изменения ширины
+        function handleResize(e) {
+            if (!isResizing || !currentResizeColumn) return;
+            
+            const deltaX = e.clientX - startX;
+            const newWidth = Math.max(
+                parseInt(currentResizeColumn.getAttribute('data-min-width') || 50),
+                startWidth + deltaX
+            );
+            
+            currentResizeColumn.style.width = newWidth + 'px';
+            
+            // Обновляем ширину всех ячеек в колонке
+            const columnIndex = Array.from(currentResizeColumn.parentElement.children).indexOf(currentResizeColumn);
+            const table = document.getElementById('mainTable');
+            const rows = table.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                const cell = row.children[columnIndex];
+                if (cell) {
+                    cell.style.width = newWidth + 'px';
+                }
+            });
+            
+            e.preventDefault();
+        }
+        
+        // Остановка изменения ширины
+        function stopResize() {
+            if (!isResizing) return;
+            
+            isResizing = false;
+            
+            if (currentResizeColumn) {
+                currentResizeColumn.querySelector('.resize-handle').classList.remove('resizing');
+                // Сохраняем новые ширины
+                saveColumnWidths();
+            }
+            
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            currentResizeColumn = null;
+        }
+        
+        // Сохранение ширины колонок в localStorage
+        function saveColumnWidths() {
+            const table = document.getElementById('mainTable');
+            const headers = table.querySelectorAll('thead th');
+            const widths = {};
+            
+            headers.forEach((header, index) => {
+                const columnName = header.textContent.trim() || `column_${index}`;
+                widths[columnName] = header.style.width;
+            });
+            
+            localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(widths));
+        }
+        
+        // Загрузка ширины колонок из localStorage
+        function loadColumnWidths() {
+            const savedWidths = localStorage.getItem(COLUMN_WIDTHS_KEY);
+            if (!savedWidths) return;
+            
+            try {
+                const widths = JSON.parse(savedWidths);
+                const table = document.getElementById('mainTable');
+                const headers = table.querySelectorAll('thead th');
+                
+                headers.forEach((header, index) => {
+                    const columnName = header.textContent.trim() || `column_${index}`;
+                    if (widths[columnName]) {
+                        header.style.width = widths[columnName];
+                        
+                        // Применяем ширину ко всем ячейкам в колонке
+                        const columnIndex = index;
+                        const rows = table.querySelectorAll('tr');
+                        
+                        rows.forEach(row => {
+                            const cell = row.children[columnIndex];
+                            if (cell) {
+                                cell.style.width = widths[columnName];
+                            }
+                        });
+                    }
+                });
+            } catch (e) {
+                console.warn('Не удалось загрузить сохраненные ширины колонок:', e);
+            }
+        }
+        
+        // Сброс ширины колонок к значениям по умолчанию
+        function resetColumnWidths() {
+            const table = document.getElementById('mainTable');
+            const headers = table.querySelectorAll('thead th');
+            
+            headers.forEach((header, index) => {
+                const defaultWidth = header.getAttribute('data-default-width') || '150px';
+                header.style.width = defaultWidth;
+                
+                // Применяем ширину ко всем ячейкам в колонке
+                const columnIndex = index;
+                const rows = table.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const cell = row.children[columnIndex];
+                    if (cell) {
+                        cell.style.width = defaultWidth;
+                    }
+                });
+            });
+            
+            // Удаляем сохраненные настройки
+            localStorage.removeItem(COLUMN_WIDTHS_KEY);
+            
+            showToast('Ширина колонок сброшена', 'success');
+        }
+        
+        // Показать JSON в модальном окне
+        function showJsonModal(button) {
+            const jsonStr = button.getAttribute('data-json');
+            const appName = button.getAttribute('data-appname');
+            const type = button.getAttribute('data-type') || 'Git';
+            
+            document.getElementById('jsonModalTitle').textContent = `${type} информация: ${appName}`;
+            
+            try {
+                const jsonObj = JSON.parse(jsonStr);
+                const formattedJson = JSON.stringify(jsonObj, null, 2);
+                const highlightedJson = syntaxHighlight(formattedJson);
+                
+                document.getElementById('jsonContent').innerHTML = highlightedJson;
+                
+                const modal = new bootstrap.Modal(document.getElementById('jsonModal'));
+                modal.show();
+                
+            } catch (e) {
+                // Если это не JSON, показываем как текст
+                document.getElementById('jsonContent').textContent = jsonStr;
+                const modal = new bootstrap.Modal(document.getElementById('jsonModal'));
+                modal.show();
+            }
+        }
+        
+        // Показать текст в модальном окне (для JVM)
+        function showTextModal(button) {
+            const text = button.getAttribute('data-text');
+            const appName = button.getAttribute('data-appname');
+            const type = button.getAttribute('data-type') || 'JVM';
+            
+            document.getElementById('textModalTitle').textContent = `${type} параметры: ${appName}`;
+            document.getElementById('textContent').textContent = text;
+            
+            const modal = new bootstrap.Modal(document.getElementById('textModal'));
+            modal.show();
+        }
+        
+        // Копировать JSON в буфер обмена
+        function copyToClipboard() {
+            const text = document.getElementById('jsonContent').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('JSON скопирован в буфер обмена', 'success');
+            }).catch(err => {
+                showToast('Ошибка при копировании', 'error');
+            });
+        }
+        
+        // Копировать текст в буфер обмена
+        function copyTextToClipboard() {
+            const text = document.getElementById('textContent').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Текст скопирован в буфер обмена', 'success');
+            }).catch(err => {
+                showToast('Ошибка при копировании', 'error');
+            });
+        }
+        
+        // Показать уведомление
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // Обновление времени последнего обновления
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('ru-RU');
+            document.getElementById('lastUpdateTime').textContent = `${dateString} ${timeString}`;
+        }
+        
+        // Автообновление данных
+        function autoRefresh() {
+            setTimeout(() => {
+                window.location.reload();
+            }, 300000); // 5 минут
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация изменения ширины колонок
+            initColumnResize();
+            
+            updateLastUpdateTime();
+            autoRefresh();
+            
+            // Обновляем время каждую минуту
+            setInterval(updateLastUpdateTime, 60000);
+            
+            // Обработка наведения на усеченный текст
+            document.querySelectorAll('.truncate-text').forEach(el => {
+                el.addEventListener('mouseenter', function() {
+                    if (this.scrollWidth > this.clientWidth) {
+                        this.style.whiteSpace = 'normal';
+                        this.style.overflow = 'visible';
+                        this.style.position = 'absolute';
+                        this.style.backgroundColor = 'white';
+                        this.style.zIndex = '100';
+                        this.style.padding = '8px';
+                        this.style.border = '1px solid #dee2e6';
+                        this.style.borderRadius = '4px';
+                        this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                        this.style.maxWidth = '400px';
+                    }
+                });
+                
+                el.addEventListener('mouseleave', function() {
+                    this.style.whiteSpace = 'nowrap';
+                    this.style.overflow = 'hidden';
+                    this.style.textOverflow = 'ellipsis';
+                    this.style.position = 'static';
+                    this.style.backgroundColor = '';
+                    this.style.zIndex = '';
+                    this.style.padding = '';
+                    this.style.border = '';
+                    this.style.borderRadius = '';
+                    this.style.boxShadow = '';
+                    this.style.maxWidth = '';
+                });
+            });
+            
+            // Добавляем обработчики для git бейджей
+            document.querySelectorAll('.git-badge').forEach(badge => {
+                badge.addEventListener('mouseenter', function() {
+                    const title = this.getAttribute('title');
+                    if (title && this.scrollWidth > this.clientWidth) {
+                        this.style.whiteSpace = 'normal';
+                        this.style.overflow = 'visible';
+                        this.style.position = 'absolute';
+                        this.style.zIndex = '100';
+                        this.style.maxWidth = '300px';
+                    }
+                });
+                
+                badge.addEventListener('mouseleave', function() {
+                    this.style.whiteSpace = 'nowrap';
+                    this.style.overflow = 'hidden';
+                    this.style.textOverflow = 'ellipsis';
+                    this.style.position = 'static';
+                    this.style.maxWidth = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
 <!-- src/main/resources/templates/simple-history.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
