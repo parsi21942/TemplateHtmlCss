@@ -1,0 +1,68 @@
+doAnswer(invocation -> {
+    PreparedStatementCreator psc = invocation.getArgument(0);
+
+    Connection con = mock(Connection.class);
+    PreparedStatement ps = mock(PreparedStatement.class);
+    when(con.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+            .thenReturn(ps);
+
+    // Вызываем лямбду
+    psc.createPreparedStatement(con);
+
+    // Проверяем что ps.setString/setLong вызвались с правильными значениями
+    verify(ps).setString(1, "expectedValue");
+    verify(ps).setLong(2, 42L);
+    // и так далее по каждому параметру внутри лямбды
+
+    return 1;
+}).when(jdbc).update(any(PreparedStatementCreator.class), any(KeyHolder.class));
+
+
+
+@Test
+void test_jdbcUpdate_withKeyHolder() throws Exception {
+
+    // --- Мокаем update с KeyHolder ---
+    doAnswer(invocation -> {
+        // Достаём PreparedStatementCreator (лямбду)
+        PreparedStatementCreator psc = invocation.getArgument(0);
+        KeyHolder keyHolder = invocation.getArgument(1);
+
+        // Мокаем Connection и PreparedStatement
+        Connection con = mock(Connection.class);
+        PreparedStatement ps = mock(PreparedStatement.class);
+        ResultSet rs = mock(ResultSet.class);
+
+        // Настраиваем поведение PreparedStatement
+        when(con.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+                .thenReturn(ps);
+
+        // Мокаем getGeneratedKeys() чтобы KeyHolder получил id
+        when(ps.getGeneratedKeys()).thenReturn(rs);
+        when(rs.next()).thenReturn(true);
+        when(rs.getLong(1)).thenReturn(100L); // сгенерированный id
+
+        // Вызываем лямбду — она выполнится с нашим моком
+        psc.createPreparedStatement(con);
+
+        // Вручную вставляем ключ в KeyHolder
+        // потому что реальный KeyHolder заполняется через ps.getGeneratedKeys()
+        ReflectionTestUtils.setField(keyHolder, "keyList",
+                List.of(Map.of("id", 100L)));
+
+        return 1; // количество затронутых строк
+    }).when(jdbc).update(
+            any(PreparedStatementCreator.class),
+            any(KeyHolder.class)
+    );
+
+    // --- Act ---
+    Long result = service.save(someRequest); // ваш метод который вызывает jdbc.update()
+
+    // --- Assert ---
+    verify(jdbc, times(1)).update(
+            any(PreparedStatementCreator.class),
+            any(KeyHolder.class)
+    );
+    assertEquals(100L, result); // проверяем что вернулся сгенерированный id
+}
